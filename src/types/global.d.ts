@@ -15,17 +15,49 @@ export {};
             pages: number;
             total: number;
         },
-        results: T[]
+        result: T[]
     	}
 	interface ILogin {
 	    access_token: string;
 	    user: {
-		email: string;
-		phone: string;
-		fullName: string;
-		role: string;
-		avatar: string;
-		id: string;
+			email: string;
+			phone: string;
+			fullName: string;
+			role: string;
+			avatar: string;
+			id: string;
+			}
 		}
+
+	interface IRegister {
+			_id: string,
+			email: string,
+			fullName: string,
+		}
+
+	interface IUser {
+			id: string,
+            email: string,
+            phone: string,
+            fullName: string,
+            role: string,
+            avatar: string,
+		}
+
+	interface IFetch {
+		user: IUser
 	}
-   	}
+
+	interface IUserTable {
+			_id: string,
+			fullName: string,
+			email: string,
+			phone: string,
+			role: string,
+			avatar: string,
+			isActive: boolean,
+			type: string,
+			createdAt: Date,
+			updatedAt: Date
+	}
+}

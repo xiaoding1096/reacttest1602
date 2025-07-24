@@ -2,29 +2,38 @@
 import type { FormProps } from 'antd';
 import { App, Button, Col, Form, Input, Row } from 'antd';
 import { loginApi } from '@/services/api';
+import { useNavigate } from 'react-router-dom';
+import { useCurrentApp } from '@/components/context/app.context';
 
 
 const LoginPage = () => {
     const [form] = Form.useForm()
     const {message, notification} = App.useApp()
-
+    const {setUser, setIsAppLoading, setIsAuthenticated} = useCurrentApp()
+    const navigation = useNavigate();
 type FieldType = {
   email: string;
   password: string;
 };
 
 const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-  
+    
     const resLogin = await loginApi(values.email, values.password)
     if(resLogin.data){
         console.log(resLogin.data)
         message.success('Login Success')
+        setUser(resLogin.data.user)
+        setIsAuthenticated(true)
+        localStorage.setItem("access_token", resLogin.data.access_token)
+        navigation('/')
+
     }else{
         notification.error({
             message:'Login Error',
             description: resLogin.message
         })
     }
+    setIsAppLoading(false)
 };  
 
 
@@ -35,7 +44,8 @@ const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
                 <Col xs={22} md={12} lg={8}>
                 <fieldset style={{
                     margin: "50px auto",
-                    borderRadius:"5px"
+                    borderRadius:"5px",
+                    padding: "15px"
                     }}>
                         <legend style={{textAlign:"center", fontSize:"22px"}}>Login</legend>
                     <Form
@@ -43,6 +53,7 @@ const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
                         name="basic"
                         form = {form}
                         onFinish={onFinish}
+                        
                     >
                         <Form.Item<FieldType>
                         label="Email"
