@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 
 export const FORMAT_DATE = "MM/DD/YYYY";
+export const FORMAT_DATE_VN = "DD/MM/YYYY"
 
 export const dateRangeValidate = (dateRange: any) => {
     if(!dateRange) return undefined;

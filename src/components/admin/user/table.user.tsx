@@ -1,11 +1,13 @@
 import { getUsersAPI } from '@/services/api';
 import { dateRangeValidate } from '@/services/helper';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable, TableDropdown } from '@ant-design/pro-components';
 import { Button, Space, Tag } from 'antd';
 import { useRef, useState } from 'react';
 import DetailUser from './detail.user';
+import CreateUser from './create.user';
+import ImportUser from './data/import.user';
 
 
 
@@ -14,11 +16,18 @@ type TSearch = {
     email: string,
     createdAt: Date,
     createdAtRange: Date,
+
 }
 
 const TableUser = () => {
     const actionRef = useRef<ActionType>();
-    const {isOpenDetailUser, setIsOpenDetailUser} = useState<boolean>(false)
+    const [openViewDetail, setOpenViewDetail] = useState<boolean>(false)
+    const [dataViewDetail, setDataViewDetail] = useState<IUserTable | null>(null)
+    const [openModalCreate, setOpenModalCreate] = useState<boolean>(false)
+    const [openModalImport, setOpenModalImport] = useState<boolean>(false)
+    const refreshTable = () => {
+         actionRef.current?.reload();
+    }
     const [meta, setMeta] = useState({
         current:1,
         pageSize:5,
@@ -34,7 +43,11 @@ const TableUser = () => {
         hideInSearch: true,
         render: (dom, entity, index, action, schema) => {
             return (
-                <a onClick={() => {setIsOpenDetailUser(true)}}>{entity._id}</a>
+                <a onClick={() => {
+                    setOpenViewDetail(true)
+                    setDataViewDetail(entity)
+                }
+            }>{entity._id}</a>
             )
         },
     },
@@ -109,6 +122,8 @@ const TableUser = () => {
                     }
                     if (sort && sort.createdAt) {
                         query += `&sort=${sort.createdAt === "ascend" ? "createdAt" : "-createdAt"}`
+                    }else {
+                        query += `&sort=-createdAt`
                     }
                     
 
@@ -139,9 +154,20 @@ const TableUser = () => {
                 toolBarRender={() => [
                     <Button
                         key="button"
+                        icon={<ImportOutlined />}
+                        onClick={() => {
+                           setOpenModalImport(true)
+                        }}
+                        type="primary"
+                    >
+                        Import
+                    </Button>
+                    ,
+                    <Button
+                        key="button"
                         icon={<PlusOutlined />}
                         onClick={() => {
-                            actionRef.current?.reload();
+                           setOpenModalCreate(true)
                         }}
                         type="primary"
                     >
@@ -151,8 +177,19 @@ const TableUser = () => {
                 ]}
             />
             <DetailUser
-            isOpenDetailUser = {isOpenDetailUser}
-            setIsOpenDetailUser= {setIsOpenDetailUser}
+            openViewDetail = {openViewDetail}
+            setOpenViewDetail = {setOpenViewDetail}
+            dataViewDetail = {dataViewDetail}
+            setDataViewDetail = {setDataViewDetail}
+            />
+            <CreateUser
+            openModalCreate = {openModalCreate}
+            setOpenModalCreate = {setOpenModalCreate}
+            refreshTable = {refreshTable}
+            />
+            <ImportUser
+                openModalImport = {openModalImport}
+                setOpenModalImport= {setOpenModalImport}
             />
         </>
     );
