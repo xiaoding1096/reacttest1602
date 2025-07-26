@@ -1,13 +1,15 @@
-import { getUsersAPI } from '@/services/api';
+import { deleteUserApi, getUsersAPI } from '@/services/api';
 import { dateRangeValidate } from '@/services/helper';
-import { DeleteOutlined, EditOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, ExportOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable, TableDropdown } from '@ant-design/pro-components';
-import { Button, Space, Tag } from 'antd';
+import { Button, message, notification, Popconfirm, Space, Tag } from 'antd';
 import { useRef, useState } from 'react';
 import DetailUser from './detail.user';
 import CreateUser from './create.user';
 import ImportUser from './data/import.user';
+import { CSVLink } from 'react-csv';
+import UpdateUser from './update.user';
 
 
 
@@ -25,6 +27,18 @@ const TableUser = () => {
     const [dataViewDetail, setDataViewDetail] = useState<IUserTable | null>(null)
     const [openModalCreate, setOpenModalCreate] = useState<boolean>(false)
     const [openModalImport, setOpenModalImport] = useState<boolean>(false)
+    const [currentDataTable, setCurrentDataTable] = useState<IUserTable[] | []>([])
+    const [openModalUpdate, setOpenModalUpdate] = useState<boolean>(false)
+    const [dataUpdate, setDataUpdate] = useState<IUserTable | null>(null)
+
+    const handleDelete = async (id : string) => {
+        const resDelete = await deleteUserApi(id)
+        if(resDelete.data){
+            message.success("Delete User Success")
+            console.log(resDelete)
+            refreshTable()
+        }
+    }
     const refreshTable = () => {
          actionRef.current?.reload();
     }
@@ -88,14 +102,29 @@ const TableUser = () => {
                 <>
                     <div style={{display: 'flex', justifyContent: 'center', gap: '30px'}}>
                         
-                        <EditOutlined style={{color: "green"}}/>
-                        <DeleteOutlined style={{color: "red"}}/>
+                        <EditOutlined style={{color: "green"}} onClick={() => {
+                            setOpenModalUpdate(true)
+                            setDataUpdate(entity)
+                        }}/>
+                        <Popconfirm
+                            title="Delete the task"
+                            description="Are you sure to delete this task?"
+                            onConfirm={() => handleDelete(entity._id)}
+                            placement= "topLeft"
+                            okText="Delete"
+                            cancelText="No"
+                        >
+                            <DeleteOutlined style={{color: "red"}} />
+                        </Popconfirm>
+                        
                     </div>
                 </>
             )
         },
     },
 ];
+
+
     return (
         <>
 
@@ -130,6 +159,7 @@ const TableUser = () => {
                     const resGetUserData = await getUsersAPI(query);
                     if(resGetUserData.data){
                         setMeta(resGetUserData?.data?.meta)
+                        setCurrentDataTable(resGetUserData?.data?.result ?? [])
                     }
                     
                     // const data = await (await fetch('https://proapi.azurewebsites.net/github/issues')).json()
@@ -152,6 +182,18 @@ const TableUser = () => {
                     
                 }}
                 toolBarRender={() => [
+                    <Button
+                        key="button"
+                        icon={<ExportOutlined/>}
+                        type="primary"
+                    >
+                        <CSVLink
+                            data={currentDataTable}
+                            filename='export-user.csv'
+                        >
+                            Export
+                        </CSVLink>
+                    </Button>,
                     <Button
                         key="button"
                         icon={<ImportOutlined />}
@@ -190,6 +232,14 @@ const TableUser = () => {
             <ImportUser
                 openModalImport = {openModalImport}
                 setOpenModalImport= {setOpenModalImport}
+                refreshTable= {refreshTable}
+            />
+            <UpdateUser
+                openModalUpdate = {openModalUpdate}
+                setOpenModalUpdate = {setOpenModalUpdate}
+                dataUpdate = {dataUpdate}
+                setDataUpdate = {setDataUpdate}
+                refreshTable = {refreshTable}
             />
         </>
     );
