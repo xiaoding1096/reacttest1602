@@ -6,6 +6,7 @@ import { Button } from 'antd';
 import { DeleteOutlined, EditOutlined, ExportOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons';
 import { getBookDataApi } from '@/services/api';
 import DetailBook from './detail.book';
+import CreateBook from './create.book';
 
 type TSearch = {
   mainText: string,
@@ -176,6 +177,9 @@ const BookTable = () => {
                         key="button"
                         icon={<PlusOutlined />}
                         type="primary"
+                        onClick={() => {
+                          setOpenModalCreate(true)
+                        }}
                     >
                         Add new
                     </Button>
@@ -188,6 +192,10 @@ const BookTable = () => {
        setOpenViewDetail ={setOpenViewDetail}
        dataViewDetail = {dataViewDetail}
        setDataViewDetail = {setDataViewDetail}
+    />
+    <CreateBook
+    openModalCreate = {openModalCreate} 
+    setOpenModalCreate = {setOpenModalCreate}
     />
     </>
     

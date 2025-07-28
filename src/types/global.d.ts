@@ -80,4 +80,7 @@ export {};
 			createdAt: Date,
 			updatedAt: Date
 	}
+
+	
+			
 }
