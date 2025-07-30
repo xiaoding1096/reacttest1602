@@ -1,8 +1,9 @@
-import { getCategoryApi } from "@/services/api";
-import { LoadingOutlined, PlusOutlined } from "@ant-design/icons";
-import { App, Col, Form, FormProps, GetProp, Image, Input, InputNumber, Modal, Row, Select, Upload, UploadFile, UploadProps } from "antd";
+import { getCategoryApi, uploadFileApi } from "@/services/api";
+import { LoadingOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
+import { App, Button, Col, Form, FormProps, GetProp, Image, Input, InputNumber, Modal, Row, Select, Upload, UploadFile, UploadProps } from "antd";
 import { UploadChangeParam } from "antd/es/upload";
 import { useEffect, useState } from "react";
+import { UploadRequestOption as RcCustomRequestOptions } from 'rc-upload/lib/interface';
 
 interface IProps {
     openModalCreate : boolean,
@@ -19,29 +20,14 @@ type FieldType = {
     slider: any
 }
 
-const onFinish = () => {
-    //todo
-} 
 type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 
+type UserUploadType = 'thumbnail' | 'slider'
+
 const CreateBook = (props : IProps) => {
-
-    // variable for upload
-    const [loading, setLoading] = useState(false);
-    const [imageUrl, setImageUrl] = useState<string>();
-    const [previewOpen, setPreviewOpen] = useState(false);
-    const [previewImage, setPreviewImage] = useState('');
-    const [fileList, setFileList] = useState<UploadFile[]>([])
-     const [loadingThumbnail, setLoadingThumbnail] = useState<boolean>(false);
-    const [loadingSlider, setLoadingSlider] = useState<boolean>(false);
-    const [fileListThumbnail, setFileListThumbnail] = useState<UploadFile[]>([]);
-    const [fileListSlider, setFileListSlider] = useState<UploadFile[]>([]);   
-    // --- 
-
     const {openModalCreate, setOpenModalCreate} = props
     const [form] = Form.useForm()
-    const {message, notification} = App.useApp()
-   
+   const {message} = App.useApp()
     const [optionCategory, setOptionCategory] = useState<{
         label: string,
         value: string,
@@ -58,18 +44,24 @@ const CreateBook = (props : IProps) => {
     }
     getOptionCategoryData()
     },[])
-    
+    // variable for upload
+     const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewImage, setPreviewImage] = useState('');
+    const [fileList, setFileList] = useState<UploadFile[]>([])
+    const [loadingThumbnail, setLoadingThumbnail] = useState<boolean>(false)
+    const [loadingSlider, setLoadingSlider] = useState<boolean>(false)
+    const [fileListThumbnail, setFileListThumbnail] = useState<UploadFile[]>([]);
+    const [fileListSlider, setFileListSlider] = useState<UploadFile[]>([]);   
 
-    //
     const getBase64 = (file: FileType): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = (error) => reject(error);
-  });
+    new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = (error) => reject(error);
+    });
 
-      const beforeUpload = (file: FileType) => {
+    const beforeUpload = (file: FileType) => {
         const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
         if (!isJpgOrPng) {
             message.error('You can only upload JPG/PNG file!');
@@ -81,55 +73,89 @@ const CreateBook = (props : IProps) => {
         return isJpgOrPng && isLt2M || Upload.LIST_IGNORE;
         };
 
-        const normFile = (e: any) => {
-        if (Array.isArray(e)) {
-            return e;
-        }
-        return e?.fileList;
-        };
 
-    const handlePreview = async (file: UploadFile) => {
+     const handlePreview = async (file: UploadFile) => {
         if (!file.url && !file.preview) {
-            file.preview = await getBase64(file.originFileObj as FileType);
+        file.preview = await getBase64(file.originFileObj as FileType);
         }
 
         setPreviewImage(file.url || (file.preview as string));
         setPreviewOpen(true);
-    };
-    
-     // 
+        };   
 
-    const handleChange = (info: UploadChangeParam, type: "thumbnail" | "slider") => {
-        if (info.file.status === 'uploading') {
-            console.log('Check info:',info)
-            type === "slider" ? setLoadingSlider(true) : setLoadingThumbnail(true);
-            return;
+    const handleChange= (info: UploadChangeParam, type : UserUploadType) => {
+        
+        if(info.file.status === 'uploading'){
+            type === 'slider' ? setLoadingSlider(true) : setLoadingThumbnail(true)
+            return
+        }
+        if(info.file.status === 'done'){
+            
+            type === 'slider' ? setLoadingSlider(false) : setLoadingThumbnail(false)
+        }
+    }
+
+    
+
+    const handleRemove = async(file: UploadFile, type: UserUploadType) => {
+        if(type === 'thumbnail'){
+            setFileListThumbnail([])
+        }
+        if(type === 'slider'){
+            const newSlider = fileListSlider.filter(x => x.uid !== file.uid)
+            setFileListSlider(newSlider)
+        }
+    }
+
+    const handleUploadFile = async (options: RcCustomRequestOptions, type: UserUploadType) => {
+            const {onSuccess} = options;
+            const file = options.file as UploadFile;
+            const res = await uploadFileApi(file, 'book')
+            console.log('API response:', res);
+            if(res && res.data){
+                const uploadedFile: any = {
+                    uid: file.uid,
+                    name: res.data.fileUploaded,
+                    status: 'done',
+                    url: `${import.meta.env.VITE_URL_BACKEND}/images/book/${res.data.fileUploaded}`
+                }
+                if(type === 'thumbnail'){
+                    console.log(res)
+                    setFileListThumbnail([{...uploadedFile}])
+                    
+                } else {
+                    console.log(res)
+                    setFileListSlider((prevState) => [...prevState, {...uploadedFile}])
+                }
+                
+                if(onSuccess){
+                     onSuccess('ok')
+                   
+
+                }else{
+                    message.error(res.message)
+                }
+            }
         }
 
-        if (info.file.status === 'done') {
-            console.log('Check info:',info)
-            // Get this url from response in real world.
-            type === "slider" ? setLoadingSlider(false) : setLoadingThumbnail(false);
-        }
-    };
+        const normFile = (e: any) => {
+            if (Array.isArray(e)) {
+                return e;
+            }
+            return e?.fileList;       
+        };
 
-    const handleUploadFile: UploadProps['customRequest'] = ({ file, onSuccess, onError }) => {
-        setTimeout(() => {
-            if (onSuccess)
-                onSuccess("ok");
-        }, 1000);
-    };
+    // --- 
+
     
     
-    //
+  
+ 
 
      const onFinish: FormProps<FieldType>['onFinish'] = async (values) => {
-        
-        
         console.log("values form: ", values, fileListThumbnail, fileListSlider); 
         console.log("values fileListThumbnail: ", fileListThumbnail)     
-        console.log("values fileListSlider: ", fileListSlider)      
-        
+        console.log("values fileListSlider: ", fileListSlider)
     };
   
     return (
@@ -138,8 +164,13 @@ const CreateBook = (props : IProps) => {
                 title="Create New Book"
                 closable={{ 'aria-label': 'Custom Close Button' }}
                 open={openModalCreate}
-                onOk={() => onFinish}
-                onCancel={()=>setOpenModalCreate(false)}
+                onOk={() => form.submit()}
+                onCancel={()=>{
+                    form.resetFields()
+                    setFileListSlider([])
+                    setFileListThumbnail([])
+                    setOpenModalCreate(false)
+                }}
                 okText='Create Book'
             >
               <Form
@@ -211,55 +242,56 @@ const CreateBook = (props : IProps) => {
                 label="Thumbnail"
                 name="thumbnail"
                 rules={[{ required: true, message: 'Please input thumbnail!' }]}
-                ><Upload
-                    listType="picture-card"
-                    className="avatar-uploader"
-                    maxCount={1}
-                    multiple={false}
-                    beforeUpload={beforeUpload}
-                    customRequest={handleUploadFile}
-                    onPreview={handlePreview}
-                    
-                    onChange={(info) => handleChange(info, 'thumbnail')}
+                valuePropName="fileList"
+                getValueFromEvent={normFile}
                 >
-                    <div>
-                        {loadingThumbnail ? <LoadingOutlined /> : <PlusOutlined />}
-                        <div style={{ marginTop: 8 }}>Upload</div>
-                    </div>
-                </Upload>
-                </Form.Item>
+                         <Upload
+                            maxCount={1}
+                            listType="picture-card"
+                            fileList={fileListThumbnail}
+                            onPreview={handlePreview}
+                            onChange={(info) => handleChange(info, 'thumbnail')}
+                            customRequest={(options) => {handleUploadFile(options,'thumbnail')}}
+                            onRemove={(file)=> {handleRemove(file,'thumbnail')}}
+
+                        >
+                            <div>
+
+                            {loadingThumbnail ? <LoadingOutlined/> : <PlusOutlined/>}
+                             <div style={{ marginTop: 8 }}>Upload</div>
+                            </div>
+                        </Upload>
+
+                        </Form.Item>
                 <Form.Item<FieldType>
                 label="Slide"
                 name="slider"
                 rules={[{ required: true, message: 'Please input slider!' }]}
+                valuePropName="fileList"
+                getValueFromEvent={normFile}
                 >
-                    <Upload
-                        multiple
-                        listType="picture-card"
-                        className="avatar-uploader"
-                        customRequest={handleUploadFile}
-                        beforeUpload={beforeUpload}
-                        onChange={(info) => handleChange(info, 'slider')}
-                        onPreview={handlePreview}
-                    >
-                        <div>
-                            {loadingSlider ? <LoadingOutlined /> : <PlusOutlined />}
-                            <div style={{ marginTop: 8 }}>Upload</div>
-                        </div>
-                    </Upload>
+                       <Upload
+                            multiple
+                            listType="picture-card"
+                            className="avatar-uploader"
+                            fileList={fileListSlider}
+                            customRequest={(options) => handleUploadFile(options, 'slider')}
+                            onPreview={handlePreview}
+                            beforeUpload={beforeUpload}
+                            onChange={(info) => handleChange(info, 'slider')}
+                            onRemove={(file) => {handleRemove(file, 'slider')}}
+                            
+                        >
+                            <div>
+                                {loadingSlider ? <LoadingOutlined/> : <PlusOutlined/>}
+                                <div style={{ marginTop: 8 }}>Upload</div>
+                            </div>
+
+                        </Upload>
+                      
                 </Form.Item>  
-            </Form>       
-            {previewImage && (
-                    <Image
-                        wrapperStyle={{ display: 'none' }}
-                        preview={{
-                            visible: previewOpen,
-                            onVisibleChange: (visible) => setPreviewOpen(visible),
-                            afterOpenChange: (visible) => !visible && setPreviewImage(''),
-                        }}
-                        src={previewImage}
-                    />
-                )}                        
+            </Form>                 
+                
             </Modal>
         </>
     )
