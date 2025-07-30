@@ -142,6 +142,12 @@ const BookTable = () => {
             query += `&author=/${params.author}/i`
           }
         }
+        if(sort && sort.createdAt){
+          query += `sort=${sort.createdAt === 'ascend' ? 'createdAt' : '-createdAt'}`
+        }else{
+          query += `sort=-createdAt`
+        }
+
          const resGetBookData = await getBookDataApi(query)
          if(resGetBookData.data){
            setMeta(resGetBookData?.data?.meta)
@@ -196,6 +202,7 @@ const BookTable = () => {
     <CreateBook
     openModalCreate = {openModalCreate} 
     setOpenModalCreate = {setOpenModalCreate}
+    refreshTable = {refreshTable}
     />
     </>
     
