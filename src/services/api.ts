@@ -107,3 +107,19 @@ export const uploadFileApi = (fileImg: any, folder: string) => {
         }
     );
 }
+
+export const updateBookAPI = (
+    _id: string,
+    mainText: string, author: string,
+    price: number, quantity: number, category: string,
+    thumbnail: string, slider: string[]
+) => {
+    const urlBackend = `/api/v1/book/${_id}`;
+    return axios.put<IBackendRes<IRegister>>(urlBackend,
+        { mainText, author, price, quantity, category, thumbnail, slider })
+}
+
+export const deleteBookApi = (_id : string) => {
+    const urlBackend = `/api/v1/book/${_id}`
+    return axios.delete<IBackendRes<string>>(urlBackend)
+}
