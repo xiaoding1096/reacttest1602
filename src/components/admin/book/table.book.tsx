@@ -2,11 +2,13 @@
 
 import React, { useRef, useState } from 'react';
 import { ProTable, ActionType, ProColumns } from '@ant-design/pro-components';
-import { Button } from 'antd';
+import { Button, message, notification } from 'antd';
 import { DeleteOutlined, EditOutlined, ExportOutlined, ImportOutlined, PlusOutlined } from '@ant-design/icons';
-import { getBookDataApi } from '@/services/api';
+import { deleteBookApi, getBookDataApi } from '@/services/api';
 import DetailBook from './detail.book';
 import CreateBook from './create.book';
+import UpdateBook from './update.book';
+import { Popconfirm } from 'antd/lib';
 
 type TSearch = {
   mainText: string,
@@ -20,9 +22,20 @@ const BookTable = () => {
   const [openModalCreate, setOpenModalCreate] = useState<boolean>(false);
   const [openModalUpdate, setOpenModalUpdate] = useState<boolean>(false);
   const [dataUpdate, setDataUpdate] = useState<IBookTable | null>(null);
+  const [openModalUpdateBook, setOpenModalUpdateBook] = useState<boolean>(false)
+  const [updateBookData,setUpdateBookData] = useState<IBookTable | null>(null)
+  const handleDelete = async(id) => {
+    const resDelete = await deleteBookApi(id)
+    if(resDelete.data){
+      message.success('Delete Success')
+      refreshTable()
 
-  const handleDelete = () => {
-    // const resDelete = await deleteBookApi()
+    }else {
+      notification.error({
+        message: 'Delete Error',
+        description: resDelete.message
+      })
+    }
   }
 
   const refreshTable= () => {
@@ -111,12 +124,28 @@ const BookTable = () => {
                 {{
                   color: 'green', fontSize:"22px"
                 }}
+                onClick={() => {
+                  setOpenModalUpdateBook(true)
+                  setUpdateBookData(entity)
+                }}
                 />
-              <DeleteOutlined style=
+
+              <Popconfirm
+                title="Delete the task"
+                description="Are you sure to delete this task?"
+                onConfirm={() => handleDelete(entity._id)}
+                okText="Delete"
+                cancelText="No"
+                placement='topLeft'
+              >
+                <DeleteOutlined style=
               {{
                 color: 'red', 
                 fontSize:"22px"
               }}/>
+              </Popconfirm>
+              
+
             </div>
           </>
         )
@@ -204,6 +233,15 @@ const BookTable = () => {
     setOpenModalCreate = {setOpenModalCreate}
     refreshTable = {refreshTable}
     />
+
+    <UpdateBook
+    openModalUpdateBook= {openModalUpdateBook}
+    setOpenModalUpdateBook={setOpenModalUpdateBook}
+    updateBookData = {updateBookData}
+    setUpdateBookData = {setUpdateBookData}
+    refreshTable = {refreshTable}
+    />
+
     </>
     
   );
