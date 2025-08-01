@@ -1,6 +1,6 @@
-import { getCategoryApi, uploadFileApi } from "@/services/api";
+import { createBookApi, getCategoryApi, uploadFileApi } from "@/services/api";
 import { LoadingOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-import { App, Button, Col, Form, FormProps, GetProp, Image, Input, InputNumber, Modal, Row, Select, Upload, UploadFile, UploadProps } from "antd";
+import { App, Button, Col, Form, FormProps, GetProp, Image, Input, InputNumber, Modal, notification, Row, Select, Upload, UploadFile, UploadProps } from "antd";
 import { UploadChangeParam } from "antd/es/upload";
 import { useEffect, useState } from "react";
 import { UploadRequestOption as RcCustomRequestOptions } from 'rc-upload/lib/interface';
@@ -8,6 +8,7 @@ import { UploadRequestOption as RcCustomRequestOptions } from 'rc-upload/lib/int
 interface IProps {
     openModalCreate : boolean,
     setOpenModalCreate : (v: boolean) => void
+    refreshTable: () => void
 }
 
 type FieldType = {
@@ -25,7 +26,7 @@ type FileType = Parameters<GetProp<UploadProps, 'beforeUpload'>>[0];
 type UserUploadType = 'thumbnail' | 'slider'
 
 const CreateBook = (props : IProps) => {
-    const {openModalCreate, setOpenModalCreate} = props
+    const {openModalCreate, setOpenModalCreate,refreshTable} = props
     const [form] = Form.useForm()
    const {message} = App.useApp()
     const [optionCategory, setOptionCategory] = useState<{
@@ -156,6 +157,25 @@ const CreateBook = (props : IProps) => {
         console.log("values form: ", values, fileListThumbnail, fileListSlider); 
         console.log("values fileListThumbnail: ", fileListThumbnail)     
         console.log("values fileListSlider: ", fileListSlider)
+        const thumbnail = fileListThumbnail?.[0]?.name ?? ''
+        const slider = fileListSlider?.map(item => item.name) ?? []
+        const {mainText,author,price,quantity,category} = values
+        const resCreateBook = await createBookApi(thumbnail, slider, mainText,author,price,quantity,category)
+        if(resCreateBook && resCreateBook.data)
+        {
+            console.log(resCreateBook.data)
+            message.success('Create New Book Success')
+            form.resetFields()
+            refreshTable()
+            setOpenModalCreate(false)
+            setFileListThumbnail([])
+            setFileListSlider([])
+        }else {
+            notification.error({
+                message: " Create New Book Erorr",
+                description: resCreateBook.message
+            })
+        }
     };
   
     return (
